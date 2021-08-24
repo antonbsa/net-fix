@@ -35,7 +35,7 @@ const {
         page.on('dialog', async dialog => {
             await dialog.accept();
         });
-        if (needReset) await resetNet(page);
+        if (needReset) spinner = await resetNet(page, spinner);
         await page.goto(`http://${defaultGatewayIp}/login.htm`);
 
         // Enter router configs
