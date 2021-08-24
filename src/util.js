@@ -1,23 +1,25 @@
+const ora = require('ora');
+
 module.exports = {
-    waitAndClick: async function (page, selector) {
+    waitAndClick: async (page, selector) => {
         await page.waitForSelector(selector, { visible: true });
         await page.click(selector);
     },
-    waitAndClickElement: async function (page, selector) {
+    waitAndClickElement: async (page, selector) => {
         await page.waitForSelector(selector, { visible: true });
         await page.evaluate((selector) => {
             document.querySelectorAll(selector)[0].click();
         }, selector)
     },
-    waitAndType: async function (page, selector, text) {
+    waitAndType: async (page, selector, text) => {
         await page.waitForSelector(selector, { visible: true });
         await page.click(selector, { clickCount: 2 });
         await page.type(selector, text);
     },
-    getMainFrame: async function (page) {
+    getMainFrame: async (page) => {
         return await page.frames().find((frame) => frame.name() === 'main');
     },
-    findWifiInTable: async function (page, tableSelector, wifiName, checkWifi) {
+    findWifiInTable: async (page, tableSelector, wifiName, checkWifi) => {
         const el = await page.evaluate((tableSelector, wifiName, checkWifi) => {
             const tableArray = Array.from(document.querySelectorAll(tableSelector));
             // take off first one - is the header
@@ -30,12 +32,21 @@ module.exports = {
                 }
             });
             console.log({ element });
-            if(checkWifi && element) {
+            if (checkWifi && element) {
                 element.querySelectorAll('td input')[0].click();
             }
             return element;
         }, tableSelector, wifiName, checkWifi);
 
         return (el) ? true : false;
+    },
+    finishAndSetSpinner: (spinner, text, warningTimeout) => {
+        spinner.succeed();
+        const newSpinner = ora(text).start();
+        setTimeout(() => {
+            newSpinner.color = 'yellow'
+        }, warningTimeout | 5000);
+
+        return newSpinner;
     }
 }

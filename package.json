@@ -4,13 +4,16 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node src/index.js"
+    "fix": "node src/index.js",
+    "fix:resetting": "node src/index.js --reset",
+    "reset": "node src/reset.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "dotenv": "^10.0.0",
+    "ora": "^5.4.1",
     "puppeteer": "^10.1.0"
   }
 }

@@ -5,6 +5,9 @@ exports.saveWirelessTab = 'input[name="save"]';
 exports.channelSelect = 'select[name="chan"]';
 exports.wirelessRepeaterTab = 'a[href="wlrepeater.htm"]';
 
+exports.maintenanceTab = 'a[href="reboot.htm"]';
+exports.resetButton = 'input[name="reset"]';
+
 exports.siteSurveyButton = 'input[name="scanUplinkAp"]';
 exports.repeaterModeCheckbox = 'input[name="RepeaterMode"]';
 exports.wirelessTableRow = 'table.formlisting tr';
