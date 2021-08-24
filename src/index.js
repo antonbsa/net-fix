@@ -1,11 +1,20 @@
 require('dotenv').config();
 const ora = require('ora');
 const puppeteer = require('puppeteer');
-const { waitAndClick, waitAndClickElement, waitAndType, getMainFrame, findWifiInTable, finishAndSetSpinner } = require('./util');
 const c = require('./constants');
 const e = require('./elements');
+const { resetNet } = require('./reset');
+const {
+    waitAndClick,
+    waitAndClickElement,
+    waitAndType,
+    getMainFrame,
+    findWifiInTable,
+    finishAndSetSpinner
+} = require('./util');
 
 (async () => {
+    const needReset = process.argv[2] === '--reset';
     const debugMode = process.env.DEBUG_MODE === 'true';
     const defaultGatewayIp = process.env.GATEWAY_BASE;
     const newGatewayIp = process.env.NEW_GATEWAY_ADDRESS;
@@ -22,16 +31,18 @@ const e = require('./elements');
             defaultViewport: null
         });
         const page = await browser.newPage();
-        await page.goto(`http://${defaultGatewayIp}/login.htm`);
         // confirm browser dialogs
         page.on('dialog', async dialog => {
             await dialog.accept();
         });
+        if (needReset) await resetNet(page);
+        await page.goto(`http://${defaultGatewayIp}/login.htm`);
 
         // Enter router configs
         spinner = finishAndSetSpinner(spinner, 'Entering router configs');
         await waitAndClick(page, e.loginBtn);
         await page.waitForNavigation();
+        if (needReset) await page.waitForTimeout(1500);
 
         const frame = await getMainFrame(page);
 
@@ -82,7 +93,7 @@ const e = require('./elements');
         await waitAndClick(frame, e.finishButton);
 
         spinner = finishAndSetSpinner(spinner, 'Changes confirmed: waiting to restart the modem and complete the configuration.');
-        spinner = finishAndSetSpinner(spinner, c.secondsTextPassed);
+        spinner = finishAndSetSpinner(spinner, c.secondsTextPassed, 30000);
 
         let interval = 0;
         const secondsInterval = setInterval(async () => {
