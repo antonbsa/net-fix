@@ -1,27 +1,30 @@
 require('dotenv').config();
-const { waitAndClick, getMainFrame, finishAndSetSpinner } = require('./util');
 const c = require('./constants');
 const e = require('./elements');
+const Page = require('./page');
 
-async function resetNet(page, spinner) {
-    const currentGateway = process.env.NEW_GATEWAY_ADDRESS;
+async function resetNet(page) {
+    try {
+        const currentGateway = process.env.NEW_GATEWAY_ADDRESS;
 
-    await page.goto(`http://${currentGateway}/login.htm`);
+        await page.goto(`http://${currentGateway}/login.htm`);
+        await page.waitAndClick(e.loginBtn);
+        await page.waitForNavigation();
+        await page.waitForSelector(e.mainFrame);
 
-    await waitAndClick(page, e.loginBtn);
-    await page.waitForNavigation();
+        const frame = new Page(await page.getMainFrame());
 
-    const frame = await getMainFrame(page);
+        page.finishAndSetSpinner('Resetting modem configs');
+        await frame.waitAndClick(e.maintenanceTab);
+        await frame.waitAndClick(e.resetButton);
 
-    spinner = finishAndSetSpinner(spinner, 'Resetting modem configs')
-    await waitAndClick(frame, e.maintenanceTab);
-    await waitAndClick(frame, e.resetButton);
-
-    spinner = finishAndSetSpinner(spinner, 'Applying default settings: it takes ~35sec', 35000)
-    await page.waitForNavigation({ timeout: c.MAX_TIMEOUT_APPLY_CONFIG });
-    spinner = finishAndSetSpinner(spinner, 'Default settings have applied!',)
-
-    return spinner;
+        page.finishAndSetSpinner('Applying default settings: it takes ~35sec', 35000);
+        await page.waitForNavigation(c.MAX_TIMEOUT_APPLY_CONFIG);
+        page.finishAndSetSpinner('Default settings have been applied!');
+    } catch (err) {
+        console.log('Error when trying to reset modem');
+        console.log(err);
+    }
 };
 
 exports.resetNet = resetNet;
