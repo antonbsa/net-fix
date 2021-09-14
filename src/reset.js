@@ -1,27 +1,41 @@
-require('dotenv').config();
-const { waitAndClick, getMainFrame, finishAndSetSpinner } = require('./util');
-const c = require('./constants');
-const e = require('./elements');
+const Page = require('./core/page');
+const e = require('./core/elements');
+const c = require('./core/constants');
+const p = require('./core/params');
 
-async function resetNet(page, spinner) {
-    const currentGateway = process.env.NEW_GATEWAY_ADDRESS;
+async function reset(page, browser) {
+    const {
+        shouldFix,
+        newGatewayIp,
+    } = p;
 
-    await page.goto(`http://${currentGateway}/login.htm`);
+    try {
+        await page.goto(`http://${newGatewayIp}/login.htm`);
+        await page.waitAndClick(e.loginBtn);
+        await page.waitForNavigation();
+        await page.waitForSelector(e.mainFrame);
 
-    await waitAndClick(page, e.loginBtn);
-    await page.waitForNavigation();
+        const frame = new Page(await page.getMainFrame());
 
-    const frame = await getMainFrame(page);
+        page.finishAndSetSpinner('Resetting modem configs');
+        await frame.waitAndClick(e.maintenanceTab);
+        await frame.waitAndClick(e.resetButton);
 
-    spinner = finishAndSetSpinner(spinner, 'Resetting modem configs')
-    await waitAndClick(frame, e.maintenanceTab);
-    await waitAndClick(frame, e.resetButton);
+        page.finishAndSetSpinner('Applying default settings: it takes ~35sec', 35000);
+        await page.waitForNavigation(c.MAX_TIMEOUT_APPLY_CONFIG);
+        page.finishAndSetSpinner('Default settings have been applied!');
+        if (!shouldFix) {
+            await page.spinnerSucceed();
+            await browser.close();
+            process.exit(0);
+        }
 
-    spinner = finishAndSetSpinner(spinner, 'Applying default settings: it takes ~35sec', 35000)
-    await page.waitForNavigation({ timeout: c.MAX_TIMEOUT_APPLY_CONFIG });
-    spinner = finishAndSetSpinner(spinner, 'Default settings have applied!',)
-
-    return spinner;
+    } catch (err) {
+        await browser.close();
+        page.spinnerFailure();
+        console.log('Error when trying to reset modem');
+        console.log(err);
+    }
 };
 
-exports.resetNet = resetNet;
+module.exports = exports = reset;

@@ -19,3 +19,4 @@ exports.wirelessPasswordGoNext = 'input[name="save"]';
 exports.ipAddressInput = 'input[name="ip"]';
 exports.finishButton = 'input[name="wlrepeaterfinish"]';
 exports.mainBanner = 'a[href="http://www.dlink.com.tw/"]';
+exports.mainFrame = 'frame[name="main"]';
