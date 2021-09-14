@@ -1,126 +1,36 @@
 require('dotenv').config();
+const reset = require('./reset');
+const fix = require('./fix');
+
 const puppeteer = require('puppeteer');
-const c = require('./constants');
-const e = require('./elements');
-const { resetNet } = require('./reset');
-const { findWifiInTable } = require('./util');
-const Page = require('./page');
+const Page = require('./core/page');
 
 (async () => {
-    const needReset = process.argv[2] === '--reset';
+    const shouldReset = process.argv[2] === '--reset';
+    const shouldFix = process.argv[2] === '--fix';
     const debugMode = process.env.DEBUG_MODE === 'true';
-    const defaultGatewayIp = process.env.GATEWAY_BASE;
-    const newGatewayIp = process.env.NEW_GATEWAY_ADDRESS;
-    const wifiName = process.env.WIRELESS_NAME;
-    const wifiPassword = process.env.WIRELESS_PASSWORD;
-    const channel = process.env.WIRELESS_CHANNEL;
-    const siteSurveyCount = process.env.SITE_SURVEY_COUNT_TRY;
 
     let mainPage;
+    const browser = await puppeteer.launch({
+        headless: (debugMode) ? false : true,
+        defaultViewport: null
+    });
 
     try {
-        const browser = await puppeteer.launch({
-            headless: (debugMode) ? false : true,
-            defaultViewport: null
-        });
         mainPage = new Page(await browser.newPage());
         mainPage.startSpinner('Acessing modem page');
         // confirm browser dialogs
         mainPage.page.on('dialog', async dialog => {
             await dialog.accept();
         });
-        if (needReset) await resetNet(mainPage);
-        await mainPage.goto(`http://${defaultGatewayIp}/login.htm`);
 
-        // Enter router configs
-        mainPage.finishAndSetSpinner('Entering router configs');
-        await mainPage.waitAndClick(e.loginBtn);
-        await mainPage.waitForNavigation();
-        await mainPage.waitForSelector(e.mainFrame);
-        if (needReset) await mainPage.waitTimeout(1500);
+        if (shouldReset) await reset(mainPage, browser);
+        if (shouldFix) await fix(mainPage, browser);
 
-        const frame = new Page(await mainPage.getMainFrame());
-
-        mainPage.finishAndSetSpinner('Setting the channel');
-        await frame.waitAndClick(e.wirelessTab);
-        await frame.select(e.channelSelect, channel);
-        await frame.waitAndClick(e.saveWirelessTab);
-
-        mainPage.finishAndSetSpinner('Going to wireless repetear tab and enabling repeater');
-        await frame.waitAndClick(e.wirelessRepeaterTab);
-
-        // Enable repeater
-        await frame.waitForSelector(e.siteSurveyButton);
-        const repeaterModeChecked = await frame.page.evaluate((repeaterModeSelector) => {
-            return document.querySelectorAll(repeaterModeSelector)[0].value == 'on';
-        }, e.repeaterModeCheckbox);
-
-        if (debugMode) console.log({ repeaterModeChecked });
-        if (!repeaterModeChecked) await frame.waitAndClick(e.repeaterModeCheckbox);
-
-        let COUNT_TRY = siteSurveyCount;
-        let founded = false;
-        mainPage.finishAndSetSpinner(`Repeating ${COUNT_TRY} times to find wifi - it takes a while to apply the channel change`, 17000);
-        while (COUNT_TRY != 0) {
-            await frame.waitAndClick(e.siteSurveyButton);
-            await frame.waitTimeout(500);
-            await frame.waitForSelector(e.wirelessTableRow);
-            founded = await findWifiInTable(frame.page, e.wirelessTableRow, wifiName, false);
-
-            if (debugMode) console.log({ founded, COUNT_TRY });
-            if (founded === true) break;
-            COUNT_TRY--;
-        };
-        if (!founded) throw new Error('did not find');
-
-        await findWifiInTable(frame.page, e.wirelessTableRow, wifiName, true);
-
-        mainPage.finishAndSetSpinner('Inserting password');
-        await frame.waitAndClick(e.siteSurveyGoNext);
-        await frame.waitAndType(e.wirelessPasswordInput, wifiPassword);
-
-        mainPage.finishAndSetSpinner('Setting new IP address');
-        await frame.waitAndClick(e.wirelessPasswordGoNext);
-        await frame.waitAndType(e.ipAddressInput, newGatewayIp);
-
-        // click to finish
-        await frame.waitAndClick(e.finishButton);
-
-        mainPage.finishAndSetSpinner('Changes confirmed: waiting to restart the modem and complete the configuration.');
-        mainPage.finishAndSetSpinner(c.secondsTextPassed, 30000);
-
-        let interval = 0;
-        const secondsInterval = setInterval(async () => {
-            interval++;
-            mainPage.setSpinnerText(`${interval} ${c.secondsTextPassed}`);
-        }, 1000);
-
-        await mainPage.waitForSelector(e.mainBanner, c.MAX_TIMEOUT_APPLY_CONFIG);
-        clearInterval(secondsInterval);
-
-        mainPage.setSpinnerText('Changes has been applied!');
-        mainPage.finishAndSetSpinner('Testing internet connection');
-
-        // Go to Google and check the response status
-        const testPage = await mainPage.goto(c.googleWebsite);
-        const status = testPage.status();
-
-        if (debugMode) await mainPage.waitTimeout(3000);
-        if (status == 200) {
-            // await page.screenshot({ path: 'google.png' });
-            mainPage.setSpinnerText('Setup completed successfully!');
-            mainPage.spinnerSucceed();
-            await browser.close();
-            process.exit(0);
-        } else {
-            await browser.close();
-            mainPage.spinnerFailure();
-            console.error('Cannot load Google page. Try to access manually and check if the setup works!');
-            process.exit(1);
-        }
-    } catch (e) {
+    } catch (err) {
+        await browser.close();
         mainPage.spinnerFailure();
-        console.error(e);
+        console.error(err);
         process.exit(1);
     }
 })();

@@ -1,12 +1,12 @@
-require('dotenv').config();
-const c = require('./constants');
-const e = require('./elements');
-const Page = require('./page');
+const Page = require('./core/page');
+const e = require('./core/elements');
+const c = require('./core/constants');
 
-async function resetNet(page) {
+async function reset(page, browser) {
+    const currentGateway = process.env.NEW_GATEWAY_ADDRESS;
+    const shouldFix = process.argv[2] === '--fix';
+
     try {
-        const currentGateway = process.env.NEW_GATEWAY_ADDRESS;
-
         await page.goto(`http://${currentGateway}/login.htm`);
         await page.waitAndClick(e.loginBtn);
         await page.waitForNavigation();
@@ -21,10 +21,18 @@ async function resetNet(page) {
         page.finishAndSetSpinner('Applying default settings: it takes ~35sec', 35000);
         await page.waitForNavigation(c.MAX_TIMEOUT_APPLY_CONFIG);
         page.finishAndSetSpinner('Default settings have been applied!');
+        if (!shouldFix) {
+            await page.spinnerSucceed();
+            await browser.close();
+            process.exit(0);
+        }
+
     } catch (err) {
+        await browser.close();
+        page.spinnerFailure();
         console.log('Error when trying to reset modem');
         console.log(err);
     }
 };
 
-exports.resetNet = resetNet;
+module.exports = exports = reset;
