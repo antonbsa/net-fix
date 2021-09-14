@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "fix": "node src/index.js --fix",
     "reset": "node src/index.js --reset",
-    "fix:resetting": "node src/index.js --fix --reset",
+    "fix": "node src/index.js --fix",
+    "reset-fix": "node src/index.js --fix --reset",
     "test": "node test.js"
   },
   "keywords": [],

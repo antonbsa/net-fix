@@ -1,13 +1,16 @@
 const Page = require('./core/page');
 const e = require('./core/elements');
 const c = require('./core/constants');
+const p = require('./core/params');
 
 async function reset(page, browser) {
-    const currentGateway = process.env.NEW_GATEWAY_ADDRESS;
-    const shouldFix = process.argv[2] === '--fix';
+    const {
+        shouldFix,
+        newGatewayIp,
+    } = p;
 
     try {
-        await page.goto(`http://${currentGateway}/login.htm`);
+        await page.goto(`http://${newGatewayIp}/login.htm`);
         await page.waitAndClick(e.loginBtn);
         await page.waitForNavigation();
         await page.waitForSelector(e.mainFrame);

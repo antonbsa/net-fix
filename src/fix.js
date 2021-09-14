@@ -1,18 +1,21 @@
 const Page = require('./core/page.js');
-// const fix = require('./fix.js');
 const c = require('./core/constants.js');
 const e = require('./core/elements.js');
+const p = require('./core/params');
 const { findWifiInTable } = require('./core/util.js');
 
 async function fix(mainPage, browser) {
-    const isResetting = process.argv[2] === '--reset';
-    const debugMode = process.env.DEBUG_MODE === 'true';
-    const defaultGatewayIp = process.env.GATEWAY_BASE;
-    const newGatewayIp = process.env.NEW_GATEWAY_ADDRESS;
-    const wifiName = process.env.WIRELESS_NAME;
-    const wifiPassword = process.env.WIRELESS_PASSWORD;
-    const channel = process.env.WIRELESS_CHANNEL;
-    const siteSurveyCount = process.env.SITE_SURVEY_COUNT_TRY;
+    const {
+        channel,
+        wifiName,
+        debugMode,
+        shouldReset,
+        newGatewayIp,
+        wifiPassword,
+        siteSurveyCount,
+        defaultGatewayIp,
+    } = p;
+
 
     try {
         await mainPage.goto(`http://${defaultGatewayIp}/login.htm`);
@@ -22,7 +25,7 @@ async function fix(mainPage, browser) {
         await mainPage.waitAndClick(e.loginBtn);
         await mainPage.waitForNavigation();
         await mainPage.waitForSelector(e.mainFrame);
-        if (isResetting) await mainPage.waitTimeout(1500);
+        if (shouldReset) await mainPage.waitTimeout(1500);
 
         const frame = new Page(await mainPage.getMainFrame());
 

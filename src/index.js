@@ -4,11 +4,14 @@ const fix = require('./fix');
 
 const puppeteer = require('puppeteer');
 const Page = require('./core/page');
+const p = require('./core/params');
 
 (async () => {
-    const shouldReset = process.argv[2] === '--reset';
-    const shouldFix = process.argv[2] === '--fix';
-    const debugMode = process.env.DEBUG_MODE === 'true';
+    const {
+        debugMode,
+        shouldFix,
+        shouldReset,
+    } = p;
 
     let mainPage;
     const browser = await puppeteer.launch({
