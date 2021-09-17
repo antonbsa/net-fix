@@ -4,7 +4,7 @@ const e = require('./core/elements.js');
 const p = require('./core/params');
 const { findWifiInTable } = require('./core/util.js');
 
-async function fix(mainPage, browser) {
+async function fix(mainPage) {
     const {
         channel,
         wifiName,
@@ -18,6 +18,7 @@ async function fix(mainPage, browser) {
 
 
     try {
+        mainPage.log('starting fix')
         await mainPage.goto(`http://${defaultGatewayIp}/login.htm`);
 
         // Enter router configs
@@ -44,7 +45,7 @@ async function fix(mainPage, browser) {
             return document.querySelectorAll(repeaterModeSelector)[0].value == 'on';
         }, e.repeaterModeCheckbox);
 
-        if (debugMode) console.log({ repeaterModeChecked });
+        mainPage.log({ repeaterModeChecked });
         if (!repeaterModeChecked) await frame.waitAndClick(e.repeaterModeCheckbox);
 
         let COUNT_TRY = siteSurveyCount;
@@ -56,7 +57,7 @@ async function fix(mainPage, browser) {
             await frame.waitForSelector(e.wirelessTableRow);
             founded = await findWifiInTable(frame.page, e.wirelessTableRow, wifiName, false);
 
-            if (debugMode) console.log({ founded, COUNT_TRY });
+            mainPage.log({ founded, COUNT_TRY });
             if (founded === true) break;
             COUNT_TRY--;
         };
@@ -75,7 +76,7 @@ async function fix(mainPage, browser) {
         // click to finish
         await frame.waitAndClick(e.finishButton);
 
-        mainPage.finishAndSetSpinner('Changes confirmed: waiting to restart the modem and complete the configuration.');
+        mainPage.finishAndSetSpinner('Changes confirmed: waiting to restart the modem and complete the configuration');
         mainPage.finishAndSetSpinner(c.secondsTextPassed, 30000);
 
         let interval = 0;
@@ -98,19 +99,12 @@ async function fix(mainPage, browser) {
         if (status == 200) {
             // await page.screenshot({ path: 'google.png' });
             mainPage.setSpinnerText('Setup completed successfully!');
-            mainPage.spinnerSucceed();
-            await browser.close();
-            process.exit(0);
+            await mainPage.complete();
         } else {
-            await browser.close();
-            mainPage.spinnerFailure();
-            console.error('Cannot load Google page. Try to access manually and check if the setup works!');
-            process.exit(1);
+            await mainPage.failure('Cannot load Google page. Try to access manually and check if the setup works!');
         }
     } catch (e) {
-        mainPage.spinnerFailure();
-        console.error(e);
-        process.exit(1);
+        await mainPage.failure(e);
     }
 }
 

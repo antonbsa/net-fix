@@ -1,9 +1,11 @@
 const ora = require('ora');
+const { debugMode } = require('./params');
 const { ELEMENT_TIMEOUT } = require('./constants');
 
 class Page {
-    constructor(page) {
+    constructor(page, browser) {
         this.page = page;
+        this.browser = browser;
         this.spinner;
     }
 
@@ -65,6 +67,30 @@ class Page {
         }, warningTimeout);
 
         this.spinner = newSpinner;
+    }
+
+    // Debug
+    log(...a) {
+        if (debugMode) {
+            this.spinner.clear();
+            console.log('::', ...a);
+            this.spinner.render();
+        }
+    }
+
+    // Finish
+    async failure(...err) {
+        await this.browser.close();
+        this.spinnerFailure();
+        err.forEach(e => {
+            console.error((debugMode) ? e : e.message);
+        });
+        process.exit(1);
+    }
+    async complete(shouldCloseBrowser = true) {
+        if (shouldCloseBrowser) await this.browser.close();
+        this.spinnerSucceed();
+        process.exit(0);
     }
 }
 

@@ -20,20 +20,17 @@ const p = require('./core/params');
     });
 
     try {
-        mainPage = new Page(await browser.newPage());
+        mainPage = new Page(await browser.newPage(), browser);
         mainPage.startSpinner('Acessing modem page');
         // confirm browser dialogs
         mainPage.page.on('dialog', async dialog => {
             await dialog.accept();
         });
 
-        if (shouldReset) await reset(mainPage, browser);
-        if (shouldFix) await fix(mainPage, browser);
+        if (shouldReset) await reset(mainPage);
+        if (shouldFix) await fix(mainPage);
 
     } catch (err) {
-        await browser.close();
-        mainPage.spinnerFailure();
-        console.error(err);
-        process.exit(1);
+        await mainPage.failure(err);
     }
 })();

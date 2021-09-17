@@ -3,13 +3,14 @@ const e = require('./core/elements');
 const c = require('./core/constants');
 const p = require('./core/params');
 
-async function reset(page, browser) {
+async function reset(page) {
     const {
         shouldFix,
         newGatewayIp,
     } = p;
 
     try {
+        page.log('starting reset')
         await page.goto(`http://${newGatewayIp}/login.htm`);
         await page.waitAndClick(e.loginBtn);
         await page.waitForNavigation();
@@ -25,16 +26,11 @@ async function reset(page, browser) {
         await page.waitForNavigation(c.MAX_TIMEOUT_APPLY_CONFIG);
         page.finishAndSetSpinner('Default settings have been applied!');
         if (!shouldFix) {
-            await page.spinnerSucceed();
-            await browser.close();
-            process.exit(0);
+            await page.complete(false);
         }
 
     } catch (err) {
-        await browser.close();
-        page.spinnerFailure();
-        console.log('Error when trying to reset modem');
-        console.log(err);
+        await page.failure('Error when trying to reset modem', err);
     }
 };
 
