@@ -29,8 +29,9 @@ async function fix(mainPage, browser) {
 
         const frame = new Page(await mainPage.getMainFrame());
 
-        mainPage.finishAndSetSpinner('Setting the channel');
+        mainPage.finishAndSetSpinner('Setting the channel and disabling SSID');
         await frame.waitAndClick(e.wirelessTab);
+        await frame.waitAndClick('input[name="hiddenSSID"]');
         await frame.select(e.channelSelect, channel);
         await frame.waitAndClick(e.saveWirelessTab);
 
