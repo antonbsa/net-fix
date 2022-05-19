@@ -21,6 +21,12 @@ async function fix(mainPage) {
         mainPage.log('starting fix')
         await mainPage.goto(`http://${defaultGatewayIp}/login.htm`);
 
+        // Checks if need to save the initial configs
+        const hasInitialForm = await mainPage.page.evaluate((saveButton) => {
+          return document.querySelector(saveButton) !== null;
+        }, e.saveInputButton);
+        if (hasInitialForm) await mainPage.waitAndClick(e.saveInputButton);
+
         // Enter router configs
         mainPage.finishAndSetSpinner('Entering router configs');
         await mainPage.waitAndClick(e.loginBtn);
@@ -34,7 +40,7 @@ async function fix(mainPage) {
         await frame.waitAndClick(e.wirelessTab);
         await frame.waitAndClick('input[name="hiddenSSID"]');
         await frame.select(e.channelSelect, channel);
-        await frame.waitAndClick(e.saveWirelessTab);
+        await frame.waitAndClick(e.saveInputButton);
 
         mainPage.finishAndSetSpinner('Going to wireless repetear tab and enabling repeater');
         await frame.waitAndClick(e.wirelessRepeaterTab);
@@ -70,7 +76,7 @@ async function fix(mainPage) {
         await frame.waitAndType(e.wirelessPasswordInput, wifiPassword);
 
         mainPage.finishAndSetSpinner('Setting new IP address');
-        await frame.waitAndClick(e.wirelessPasswordGoNext);
+        await frame.waitAndClick(e.saveInputButton);
         await frame.waitAndType(e.ipAddressInput, newGatewayIp);
 
         // click to finish
